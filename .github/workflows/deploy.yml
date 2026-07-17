@@ -31,7 +31,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: '*.war'
+          source: 'target/*.war'
           target: '/home/ubuntu/'
 
       - name: copy war to tomcat
