@@ -35,7 +35,7 @@ jobs:
           target: '/home/ubuntu/'
 
       - name: copy war to tomcat
-        uses: appleboy/ssh-action@v1.3.5
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
