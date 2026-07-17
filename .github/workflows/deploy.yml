@@ -23,32 +23,9 @@ jobs:
       - name: Build WAR package
         run: |
           mvn clean package -DskipTests
-
-      - name: Verify WAR file location
-        run: |
-          echo "Listing WAR files:"
-          find . -name "*.war" || echo "No WAR files found!"
-
-      - name: Upload WAR file via SCP
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.TOMCAT_HOST }}
-          username: ${{ secrets.TOMCAT_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "target/*.war"
-          target: "/tmp/"
-
-      - name: Move WAR to Tomcat webapps & restart
-        uses: appleboy/ssh-action@v1.1.0
-        with:
-          host: ${{ secrets.TOMCAT_HOST }}
-          username: ${{ secrets.TOMCAT_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            echo "Moving WAR to Tomcat webapps..."
-            sudo mv /tmp/target/*.war /opt/tomcat/webapps/
-            echo "Restarting Tomcat..."
-            sudo systemctl restart tomcat
-            sleep 5
-            sudo systemctl status tomcat --no-pager
-            echo "✅ Deployment complete!"
+####################################
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@<action version or sha1>
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
