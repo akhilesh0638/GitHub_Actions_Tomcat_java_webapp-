@@ -25,4 +25,4 @@ jobs:
         run: |
           curl -u "${{ secrets.TOMCAT_USERNAME }}:${{ secrets.TOMCAT_PASSWORD }}" \
           --upload-file target/*.war \
-          "${{ secrets.TOMCAT_URL }}/manager/text/deploy?path=/java-webapp&update=true"
+          "${{ secrets.TOMCAT_URL }}/manager/text/deploy?path=/java-my-webapp&update=true"
