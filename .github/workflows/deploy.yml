@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: set up java
-        uses: actions/setup-java@v5.6.0
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -31,7 +31,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: 'target/*.war'
+          source: '*.war'
           target: '/home/ubuntu/'
 
       - name: copy war to tomcat
@@ -40,7 +40,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          scripts: |
+          script: |
             sudo cp /home/ubuntu/*.war /opt/tomcat/webapps/
 
           
