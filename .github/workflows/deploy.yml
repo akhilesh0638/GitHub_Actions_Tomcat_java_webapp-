@@ -25,22 +25,60 @@ jobs:
       - name: pacakage with maven
         run: mvn package
 
-      - name: copy war to ec2
-        uses: appleboy/scp-action@v0.1.7
+      - uses: actions/upload-artifact@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: 'target/*.war'
-          target: '/home/ubuntu/'
+          name: war
+          path: target/*.war
 
-      - name: copy war to tomcat
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            sudo cp /home/ubuntu/target/*.war /opt/tomcat/webapps/
+  deploy-ec2:
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+        - uses: actions/download-artifact@v4 
+          with:
+            name: war
+        
+        - name: copy war to ec2
+          uses: appleboy/scp-action@v0.1.7
+          with:
+            host: ${{ secrets.EC2_HOST }}
+            username: ${{ secrets.EC2_USERNAME }}
+            key: ${{ secrets.EC2_SSH_KEY }}
+            source: 'target/*.war'
+            target: '/home/ubuntu/'
 
+        - name: copy war to tomcat
+          uses: appleboy/ssh-action@v1.0.3
+          with:
+            host: ${{ secrets.EC2_HOST }}
+            username: ${{ secrets.EC2_USERNAME }}
+            key: ${{ secrets.EC2_SSH_KEY }}
+            script: |
+              sudo cp /home/ubuntu/target/*.war /opt/tomcat/webapps/
+
+  deploy-env:
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+        - uses: actions/download-artifact@v4 
+          with:
+            name: war
+        
+        - name: copy war to ec2
+          uses: appleboy/scp-action@v0.1.7
+          with:
+            host: ${{ secrets.ENV_HOST }}
+            username: ${{ secrets.ENV_USERNAME }}
+            key: ${{ secrets.ENV_SSH_KEY }}
+            source: 'target/*.war'
+            target: '/home/ubuntu/'
+
+        - name: copy war to tomcat
+          uses: appleboy/ssh-action@v1.0.3
+          with:
+            host: ${{ secrets.ENV_HOST }}
+            username: ${{ secrets.ENV_USERNAME }}
+            key: ${{ secrets.ENV_SSH_KEY }}
+            script: |
+              sudo cp /home/ubuntu/target/*.war /opt/tomcat/webapps/
           
