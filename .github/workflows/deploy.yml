@@ -1,84 +1,28 @@
-name: cicd pipeline
+name: Build and Deploy
+
 on:
   push:
     branches:
       - main
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: set up java
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
+          distribution: temurin
           java-version: '17'
-          distribution: 'temurin'
 
-      - name: validate with maven
-        run: mvn validate
-      - name: compile with maven
-        run: mvn compile
-      - name: test with maven
-        run: mvn test
-      - name: pacakage with maven
-        run: mvn package
+      - name: Build WAR
+        run: mvn clean package
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: war
-          path: target/*.war
-
-  deploy-ec2:
-    needs: build-and-deploy
-    runs-on: ubuntu-latest
-    steps:
-        - uses: actions/download-artifact@v4 
-          with:
-            name: war
-        
-        - name: copy war to ec2
-          uses: appleboy/scp-action@v0.1.7
-          with:
-            host: ${{ secrets.EC2_HOST }}
-            username: ${{ secrets.EC2_USERNAME }}
-            key: ${{ secrets.EC2_SSH_KEY }}
-            source: '*.war'
-            target: '/home/ubuntu/'
-
-        - name: copy war to tomcat
-          uses: appleboy/ssh-action@v1.0.3
-          with:
-            host: ${{ secrets.EC2_HOST }}
-            username: ${{ secrets.EC2_USERNAME }}
-            key: ${{ secrets.EC2_SSH_KEY }}
-            script: |
-              sudo cp /home/ubuntu/target/*.war /opt/tomcat/webapps/
-
-  deploy-env:
-    needs: build-and-deploy
-    runs-on: ubuntu-latest
-    steps:
-        - uses: actions/download-artifact@v4 
-          with:
-            name: war
-        
-        - name: copy war to ec2
-          uses: appleboy/scp-action@v0.1.7
-          with:
-            host: ${{ secrets.ENV_HOST }}
-            username: ${{ secrets.ENV_USERNAME }}
-            key: ${{ secrets.ENV_SSH_KEY }}
-            source: '*.war'
-            target: '/home/ubuntu/'
-
-        - name: copy war to tomcat
-          uses: appleboy/ssh-action@v1.0.3
-          with:
-            host: ${{ secrets.ENV_HOST }}
-            username: ${{ secrets.ENV_USERNAME }}
-            key: ${{ secrets.ENV_SSH_KEY }}
-            script: |
-              sudo cp /home/ubuntu/target/*.war /opt/tomcat/webapps/
-          
+      - name: Deploy to Tomcat
+        run: |
+          curl -u "${{ secrets.TOMCAT_USERNAME }}:${{ secrets.TOMCAT_PASSWORD }}" \
+          --upload-file target/*.war \
+          "${{ secrets.TOMCAT_URL }}/manager/text/deploy?path=/java-webapp&update=true"
