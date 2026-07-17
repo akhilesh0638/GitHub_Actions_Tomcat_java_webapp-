@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Multi Environment Deployment
 
 on:
   push:
@@ -6,23 +6,87 @@ on:
       - main
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: 17
 
       - name: Build WAR
         run: mvn clean package
 
-      - name: Deploy to Tomcat
-        run: |
-          curl -u "${{ secrets.TOMCAT_USERNAME }}:${{ secrets.TOMCAT_PASSWORD }}" \
-          --upload-file target/*.war \
-          "${{ secrets.TOMCAT_URL }}/manager/text/deploy?path=/java-my-webapp&update=true"
+      - name: Upload WAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: war-file
+          path: target/*.war
+########################################
+  deploy-dev:
+            needs: build
+            runs-on: ubuntu-latest
+            environment: DEV
+
+            steps:
+              - uses: actions/download-artifact@v4
+                with:
+                  name: war-file
+
+              - name: Deploy to Development
+                run: |
+                  curl -u "${{ secrets.DEV_TOMCAT_USERNAME }}:${{ secrets.DEV_TOMCAT_PASSWORD }}" \
+                  --upload-file *.war \
+                  "${{ secrets.DEV_TOMCAT_URL }}/manager/text/deploy?path=/java-my-webapp&update=true"
+########################################
+  deploy-test:
+        needs: deploy-dev
+        runs-on: ubuntu-latest
+        environment: TEST
+
+        steps:
+          - uses: actions/download-artifact@v4
+            with:
+                name: war-file
+
+          - name: Deploy to Testing
+            run: |
+                  curl -u "${{ secrets.TEST_TOMCAT_USERNAME }}:${{ secrets.TEST_TOMCAT_PASSWORD }}" \
+                  --upload-file *.war \
+                   "${{ secrets.TEST_TOMCAT_URL }}/manager/text/deploy?path=/java-my-webapp&update=true"
+########################################
+  deploy-preprod:
+        needs: deploy-test
+        runs-on: ubuntu-latest
+        environment: PREPROD
+
+        steps:
+          - uses: actions/download-artifact@v4
+            with:
+              name: war-file
+
+          - name: Deploy to Pre-production
+            run: |
+              curl -u "${{ secrets.PREPROD_TOMCAT_USERNAME }}:${{ secrets.PREPROD_TOMCAT_PASSWORD }}" \
+              --upload-file *.war \
+              "${{ secrets.PREPROD_TOMCAT_URL }}/manager/text/deploy?path=/java-my-webapp&update=true"
+########################################
+  deploy-prod:
+            needs: deploy-preprod
+            runs-on: ubuntu-latest
+            environment: PROD
+
+            steps:
+              - uses: actions/download-artifact@v4
+                with:
+                  name: war-file
+
+              - name: Deploy to Production
+                run: |
+                  curl -u "${{ secrets.PROD_TOMCAT_USERNAME }}:${{ secrets.PROD_TOMCAT_PASSWORD }}" \
+                  --upload-file *.war \
+                  "${{ secrets.PROD_TOMCAT_URL }}/manager/text/deploy?path=/java-my-webapp&update=true"
